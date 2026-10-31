@@ -1,0 +1,24 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+
+# Generated test output and Python bytecode
+test-results/
+__pycache__/
+*.py[cod]
+
+# Local course downloads and handoff archives do not belong to CodeForge
+Sigma*/
+*handoff.zip
+
+# Private local settings
+.env
+.env.*
+!.env.example
+
+# LinkedIn personal assets & screenshots
+linkedin/
+
