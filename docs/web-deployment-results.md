@@ -76,7 +76,19 @@ Prepared on 31 October 2026.
 
 ## 5. Deployment Readiness & Next Steps
 
+- **GitHub Repository**: [https://github.com/AmoghRaghuwanshi/IDE](https://github.com/AmoghRaghuwanshi/IDE) (`main` branch)
 - **Local Preview**: Ready to run `npm run dev` or `npm run preview` in `D:\IDE\web`.
-- **Vercel Protected Preview Deployment**:
-  - Prerequisite: User needs to run `npx vercel login` and link the project, or provide deployment authorization and credentials.
-  - Configuration in `web/vercel.json` provides clean SPA routing with API pass-through (`/api/(.*)`).
+- **Vercel Deployment Settings**:
+  - **Root Directory**: `web`
+  - **Framework Preset**: `Vite`
+  - **Build Command**: `npm run build`
+  - **Output Directory**: `dist`
+  - **Install Command**: `npm ci`
+  - **Node.js Version**: `20.x`
+  - **Environment Variables**:
+    - `GEMINI_API_KEY` (secret)
+    - `GEMINI_MODEL=gemini-2.5-flash`
+    - `MAX_EXECUTION_TIME_MS=30000`
+    - `MAX_OUTPUT_BYTES=250000`
+    - `MAX_TRACE_STEPS=2000`
+
