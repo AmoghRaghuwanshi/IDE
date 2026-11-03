@@ -13,6 +13,7 @@ function maskKey(key: string): string {
 export default function AiKeyModal({ onDismiss }: AiKeyModalProps) {
   const keys = useAiKeyStore((s) => s.keys)
   const activeKeyIndex = useAiKeyStore((s) => s.activeKeyIndex)
+  const modalReason = useAiKeyStore((s) => s.modalReason)
   const addKey = useAiKeyStore((s) => s.addKey)
   const removeKey = useAiKeyStore((s) => s.removeKey)
   const setActiveKeyIndex = useAiKeyStore((s) => s.setActiveKeyIndex)
@@ -64,6 +65,29 @@ export default function AiKeyModal({ onDismiss }: AiKeyModalProps) {
         </div>
 
         <div className="modal-body">
+          {modalReason && (
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: '6px',
+                background: 'rgba(210, 153, 34, 0.15)',
+                border: '1px solid rgba(210, 153, 34, 0.5)',
+                color: 'var(--accent-amber)',
+                fontSize: '13px',
+                fontWeight: 500,
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <span>⚠️</span>
+              <span>
+                <strong>API Key Required:</strong> Please add at least one Google Gemini API key before using <strong>{modalReason}</strong>.
+              </span>
+            </div>
+          )}
+
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.5, marginBottom: '14px' }}>
             To use AI Chat, inline code fixes, and error explanations, provide your own Google Gemini API key.
             Keys are <strong>saved locally in your browser</strong> so you never need to export environment variables.

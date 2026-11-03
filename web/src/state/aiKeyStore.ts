@@ -8,8 +8,9 @@ export interface AiKeyStoreState {
   keys: string[]
   activeKeyIndex: number
   isModalOpen: boolean
+  modalReason: string | null
   
-  openModal: () => void
+  openModal: (reason?: string) => void
   closeModal: () => void
   addKey: (key: string) => { success: boolean; error?: string }
   removeKey: (index: number) => void
@@ -26,9 +27,10 @@ export const useAiKeyStore = create<AiKeyStoreState>()(
       keys: [],
       activeKeyIndex: 0,
       isModalOpen: false,
+      modalReason: null,
 
-      openModal: () => set({ isModalOpen: true }),
-      closeModal: () => set({ isModalOpen: false }),
+      openModal: (reason?: string) => set({ isModalOpen: true, modalReason: typeof reason === 'string' ? reason : null }),
+      closeModal: () => set({ isModalOpen: false, modalReason: null }),
 
       addKey: (rawKey: string) => {
         const key = rawKey.trim()

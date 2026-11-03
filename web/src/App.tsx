@@ -200,6 +200,10 @@ export default function App() {
   // Start execution visualizer
   const handleVisualize = useCallback(async () => {
     if (!activeFile) return
+    if (!useAiKeyStore.getState().hasKey()) {
+      openAiKeyModal('the Execution Visualizer')
+      return
+    }
     const execution = useExecutionStore.getState()
     const snapshot = execution.runSnapshot
     if (execution.isVisualizing || status === 'running' || status === 'compiling') return
@@ -503,7 +507,13 @@ export default function App() {
 
         <button
           className="toolbar-btn"
-          onClick={() => setShowChatbot(!showChatbot)}
+          onClick={() => {
+            if (!useAiKeyStore.getState().hasKey()) {
+              openAiKeyModal('the Gemini AI Assistant')
+              return
+            }
+            setShowChatbot(!showChatbot)
+          }}
           title="Toggle Gemini Assistant"
         >
           ✨ AI
@@ -511,7 +521,7 @@ export default function App() {
 
         <button
           className="toolbar-btn"
-          onClick={openAiKeyModal}
+          onClick={() => openAiKeyModal()}
           title="Manage Gemini API Keys (BYOK - Save up to 5 keys in browser)"
           style={{
             borderColor: aiKeys.length > 0 ? 'rgba(46, 160, 67, 0.4)' : 'rgba(210, 153, 34, 0.5)',

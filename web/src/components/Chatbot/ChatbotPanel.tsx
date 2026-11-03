@@ -38,6 +38,12 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return
 
+    if (!hasKeys) {
+      openAiKeyModal('the Gemini AI Assistant')
+      setMessages((prev) => [...prev, { role: 'model', content: '⚠️ Please add at least one Google Gemini API key to use the AI assistant.' }])
+      return
+    }
+
     const userMessage = input.trim()
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', content: userMessage }])
@@ -98,7 +104,7 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
           <span style={{ fontSize: '16px' }}>✨</span>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Gemini Assistant</h3>
           <button
-            onClick={openAiKeyModal}
+            onClick={() => openAiKeyModal()}
             title="Manage Gemini API Keys"
             style={{
               background: 'none',
@@ -135,7 +141,7 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
         >
           <span style={{ color: 'var(--accent-amber)' }}>⚠️ Add a Gemini key to chat</span>
           <button
-            onClick={openAiKeyModal}
+            onClick={() => openAiKeyModal()}
             className="toolbar-btn primary"
             style={{ fontSize: '11px', padding: '3px 8px' }}
           >
@@ -187,6 +193,10 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
                       <button
                         onClick={() => {
                           if (!activeFile) return
+                          if (!hasKeys) {
+                            openAiKeyModal('Code Review & Merge')
+                            return
+                          }
                           const fileId = activeFile.id
                           const originalContent = activeFile.content
                           const reqId = ++mergeRequest.current

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useEditorStore } from '../../state/editorStore'
+import { useAiKeyStore } from '../../state/aiKeyStore'
 import type { NormalizedError } from '../../shared/types'
 import { platform } from '../../platform/remoteAdapter'
 
@@ -26,6 +27,10 @@ function ErrorItem({ error }: { error: NormalizedError }) {
   
   const handleExplainError = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!useAiKeyStore.getState().hasKey()) {
+      useAiKeyStore.getState().openModal('AI Error Explanation')
+      return
+    }
     setIsExplaining(true)
     setAiExplanation(null)
     const requestId = ++explainRequestRef.current

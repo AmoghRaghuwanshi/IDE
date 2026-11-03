@@ -128,5 +128,13 @@ Prepared on 31 October 2026.
 - **Client-Side Heartbeat**: `App.tsx` sends a keep-alive request to `/api/health` every 4 minutes while users are active.
 - **Cache-Busting Response**: `web/api/health.ts` serves `Cache-Control: no-cache, no-store, must-revalidate` so keep-alive requests reach the execution environment without edge cache absorption.
 
+## 8. Mandated API Key Requirement Before Visualizer & Gemini Features
+
+- **Execution Visualizer**: Clicking **`👁 Visualize`** checks if at least one Gemini API key has been added. If missing, it immediately presents the key setup modal with the prompt: *"API Key Required: Please add at least one Google Gemini API key before using the Execution Visualizer."*
+- **AI Assistant**: Clicking **`✨ AI`** or submitting a message in the chat prompts for key configuration before proceeding.
+- **Code Review & Merge**: Triggering code review / diff merges requires at least one configured API key.
+- **Error Explanation**: Clicking **`Explain with AI`** in the Errors panel prompts for key configuration before querying the model.
+
+
 
 
