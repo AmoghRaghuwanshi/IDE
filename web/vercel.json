@@ -1,5 +1,11 @@
 {
   "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/health",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",

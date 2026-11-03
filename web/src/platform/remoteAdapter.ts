@@ -9,6 +9,7 @@ import type { NormalizedVisualizerStep } from '../shared/visualizer'
 import { parseGccErrors, parsePythonErrors } from '../shared/errorParsers'
 import { normalizeVisualizationTrace } from '../shared/traceNormalizer'
 import { useAiKeyStore } from '../state/aiKeyStore'
+import { useAdminStore } from '../state/adminStore'
 
 interface ActiveCloudJob {
   id: string
@@ -451,7 +452,15 @@ finally:
     }
   }): Promise<{ success: boolean; text?: string; error?: string }> {
     const keyStore = useAiKeyStore.getState()
-    const activeKey = keyStore.getActiveKey()
+    const adminStore = useAdminStore.getState()
+
+    let activeKey = keyStore.getActiveKey()
+    let isUsingAdminKey = false
+
+    if (!activeKey && adminStore.allowGuestAccess && adminStore.hasAdminKey()) {
+      activeKey = adminStore.getAdminKey()
+      isUsingAdminKey = true
+    }
 
     if (!activeKey) {
       keyStore.openModal()
@@ -485,7 +494,7 @@ ${args.prompt}`
 
     let currentKey = activeKey
     let attempts = 0
-    const maxAttempts = Math.min(keyStore.keys.length + 1, 6)
+    const maxAttempts = Math.min((isUsingAdminKey ? adminStore.adminKeys.length : keyStore.keys.length) + 1, 6)
 
     while (attempts < maxAttempts) {
       attempts++
@@ -508,7 +517,7 @@ ${args.prompt}`
 
           // Handle rate limit (429) or quota exceeded by rotating key
           if (res.status === 429) {
-            const next = keyStore.rotateToNextKey()
+            const next = isUsingAdminKey ? adminStore.rotateAdminKey() : keyStore.rotateToNextKey()
             if (next && next !== currentKey) {
               currentKey = next
               break // retry loop with new key
@@ -539,7 +548,7 @@ ${args.prompt}`
     return { success: false, error: 'Could not complete AI request with configured API keys.' }
   }
 
-  // AI Full-File Merge with BYOK
+  // AI Full-File Merge with BYOK or Admin Key
   async aiMergeCode(args: {
     currentContent: string
     snippet: string
@@ -547,7 +556,13 @@ ${args.prompt}`
     fileId: string
   }): Promise<{ success: boolean; mergedContent?: string; error?: string }> {
     const keyStore = useAiKeyStore.getState()
-    const activeKey = keyStore.getActiveKey()
+    const adminStore = useAdminStore.getState()
+
+    let activeKey = keyStore.getActiveKey()
+
+    if (!activeKey && adminStore.allowGuestAccess && adminStore.hasAdminKey()) {
+      activeKey = adminStore.getAdminKey()
+    }
 
     if (!activeKey) {
       keyStore.openModal()

@@ -5,6 +5,7 @@ import FileTree from './components/Sidebar/FileTree'
 import BottomPanel from './components/BottomPanel/BottomPanel'
 import SetupAssistant from './components/SetupAssistant/SetupAssistant'
 import AiKeyModal from './components/AiKeyModal/AiKeyModal'
+import AdminPanel from './components/Admin/AdminPanel'
 import { useEditorStore } from './state/editorStore'
 import { useExecutionStore } from './state/executionStore'
 import { useAiKeyStore } from './state/aiKeyStore'
@@ -71,6 +72,47 @@ export default function App() {
   const [sidebarWidth, setSidebarWidth] = useState(260)
   const [bottomPanelHeight, setBottomPanelHeight] = useState(280)
   const [lastRunSuccess, setLastRunSuccess] = useState(false)
+
+  const [isAdminRoute, setIsAdminRoute] = useState(() => {
+    return window.location.pathname === '/admin' || window.location.hash === '#/admin'
+  })
+
+  // Listen to browser back/forward and hash changes
+  useEffect(() => {
+    const checkRoute = () => {
+      setIsAdminRoute(window.location.pathname === '/admin' || window.location.hash === '#/admin')
+    }
+    window.addEventListener('popstate', checkRoute)
+    window.addEventListener('hashchange', checkRoute)
+    return () => {
+      window.removeEventListener('popstate', checkRoute)
+      window.removeEventListener('hashchange', checkRoute)
+    }
+  }, [])
+
+  const navigateTo = (path: string) => {
+    if (path === '/admin') {
+      window.history.pushState({}, '', '/admin')
+      setIsAdminRoute(true)
+    } else {
+      window.history.pushState({}, '', '/')
+      setIsAdminRoute(false)
+    }
+  }
+
+  // Anti-sleep keep-alive heartbeat: ping /api/health periodically so server never goes cold
+  useEffect(() => {
+    const keepAlive = async () => {
+      try {
+        await fetch('/api/health?t=' + Date.now(), { cache: 'no-store' })
+      } catch {
+        /* ignore network hiccups */
+      }
+    }
+    keepAlive()
+    const timer = setInterval(keepAlive, 4 * 60 * 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   const activeFile = openFiles.find((f) => f.id === activeFileId)
 
@@ -364,6 +406,10 @@ export default function App() {
     error: 'Error'
   }
 
+  if (isAdminRoute) {
+    return <AdminPanel onBackToIde={() => navigateTo('/')} />
+  }
+
   return (
     <div className="app-shell">
       {/* Top Menu & Toolbar */}
@@ -481,7 +527,16 @@ export default function App() {
           onClick={() => setShowSetup(true)}
           title="Toolchains and Status"
         >
-          ⚙ Runner
+          ⚡ Runner
+        </button>
+
+        <button
+          className="toolbar-btn"
+          onClick={() => navigateTo('/admin')}
+          title="Admin Panel (/admin) - Configure system Gemini keys & server anti-sleep"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          🔐 Admin
         </button>
 
         <div className="toolbar-spacer" />

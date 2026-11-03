@@ -110,4 +110,23 @@ Prepared on 31 October 2026.
    - Requests call Google's Generative Language API directly from the browser with zero server environment variable requirements.
    - **Smart Quota Rotation**: If the active key hits a rate limit or quota ceiling (HTTP 429), CodeForge automatically rotates to the next available key.
 
+## 7. Admin Panel & Anti-Sleep Keep-Alive Configuration
+
+### A. Admin Panel (`/admin`)
+- **URL Route**: `https://ide.amoghbuilds.tech/admin` (or `#/admin` and `🔐 Admin` button in top toolbar).
+- **Credentials**:
+  - **Username**: `Amogh`
+  - **Password**: `Amogh1234`
+- **Features**:
+  - **System Gemini API Key Management**: Amogh can configure personal Gemini API keys.
+  - **Guest Access Provider**: Toggle allows students and visitors who have not configured their own keys to use AI features powered by the Admin keys automatically.
+  - **Key Testing**: In-dashboard key verification against `gemini-2.0-flash` with response validation.
+  - **Failover / Quota Rotation**: Automatic rotation across admin keys on HTTP 429 quota exhaustion.
+
+### B. Anti-Sleep Server Keep-Alive
+- **Vercel Platform Cron**: Added to `web/vercel.json` to ping `/api/health` every 5 minutes (`*/5 * * * *`).
+- **Client-Side Heartbeat**: `App.tsx` sends a keep-alive request to `/api/health` every 4 minutes while users are active.
+- **Cache-Busting Response**: `web/api/health.ts` serves `Cache-Control: no-cache, no-store, must-revalidate` so keep-alive requests reach the execution environment without edge cache absorption.
+
+
 

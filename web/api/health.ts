@@ -4,6 +4,7 @@ export default function handler(req: IncomingMessage, res: ServerResponse): void
   const response = {
     status: 'healthy',
     timestamp: Date.now(),
+    keepAlive: true,
     aiConfigured: true,
     toolchains: {
       c: {
@@ -28,6 +29,8 @@ export default function handler(req: IncomingMessage, res: ServerResponse): void
   }
 
   res.setHeader('Content-Type', 'application/json')
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+  res.setHeader('Pragma', 'no-cache')
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
   res.statusCode = 200
