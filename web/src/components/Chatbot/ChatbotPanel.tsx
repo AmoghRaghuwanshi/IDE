@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useEditorStore } from '../../state/editorStore'
 import { useExecutionStore } from '../../state/executionStore'
+import { useAiKeyStore } from '../../state/aiKeyStore'
 import { platform } from '../../platform/remoteAdapter'
 
 type Message = { role: 'user' | 'model'; content: string }
@@ -19,6 +20,9 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
   const clearAiSuggestions = useEditorStore((s) => s.clearAiSuggestions)
   const activeFile = openFiles.find((f) => f.id === activeFileId)
   const recordedOutput = useExecutionStore((s) => s.recordedOutput)
+  const openAiKeyModal = useAiKeyStore((s) => s.openModal)
+  const hasKeys = useAiKeyStore((s) => s.hasKey())
+  const keysCount = useAiKeyStore((s) => s.keys.length)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -93,6 +97,21 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '16px' }}>✨</span>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Gemini Assistant</h3>
+          <button
+            onClick={openAiKeyModal}
+            title="Manage Gemini API Keys"
+            style={{
+              background: 'none',
+              border: '1px solid var(--border-primary)',
+              borderRadius: '4px',
+              fontSize: '11px',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              color: hasKeys ? 'var(--accent-green)' : 'var(--accent-amber)'
+            }}
+          >
+            🔑 {keysCount}/5
+          </button>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {messages.length > 0 && (
@@ -101,6 +120,29 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '16px' }}>✕</button>
         </div>
       </div>
+
+      {!hasKeys && (
+        <div
+          style={{
+            padding: '10px 12px',
+            background: 'rgba(210, 153, 34, 0.1)',
+            borderBottom: '1px solid rgba(210, 153, 34, 0.3)',
+            fontSize: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+        >
+          <span style={{ color: 'var(--accent-amber)' }}>⚠️ Add a Gemini key to chat</span>
+          <button
+            onClick={openAiKeyModal}
+            className="toolbar-btn primary"
+            style={{ fontSize: '11px', padding: '3px 8px' }}
+          >
+            Add Key
+          </button>
+        </div>
+      )}
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>

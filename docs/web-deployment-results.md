@@ -74,10 +74,10 @@ Prepared on 31 October 2026.
 - `tsc --noEmit`: PASS (0 errors)
 - `vite build`: PASS (1302 modules transformed, produced `dist/index.html` and chunks for monaco, xterm, workers, and styles).
 
-## 5. Deployment Readiness & Next Steps
+## 5. Deployment & Vercel Custom Domain Status
 
 - **GitHub Repository**: [https://github.com/AmoghRaghuwanshi/IDE](https://github.com/AmoghRaghuwanshi/IDE) (`main` branch)
-- **Local Preview**: Ready to run `npm run dev` or `npm run preview` in `D:\IDE\web`.
+- **Production Custom Domain**: [https://ide.amoghbuilds.tech/](https://ide.amoghbuilds.tech/)
 - **Vercel Deployment Settings**:
   - **Root Directory**: `web`
   - **Framework Preset**: `Vite`
@@ -85,10 +85,29 @@ Prepared on 31 October 2026.
   - **Output Directory**: `dist`
   - **Install Command**: `npm ci`
   - **Node.js Version**: `20.x`
-  - **Environment Variables**:
-    - `GEMINI_API_KEY` (secret)
-    - `GEMINI_MODEL=gemini-2.5-flash`
-    - `MAX_EXECUTION_TIME_MS=30000`
-    - `MAX_OUTPUT_BYTES=250000`
-    - `MAX_TRACE_STEPS=2000`
+
+## 6. Vercel 500 Incident Root Cause & Comprehensive Resolution
+
+### Incident: `Unexpected token 'A', "A server e"... is not valid JSON`
+1. **Root Cause**:
+   - Vercel Serverless Functions in `web/api/` returned `HTTP 500 FUNCTION_INVOCATION_FAILED` with plain text body `"A server error has occurred..."`.
+   - The root cause of `FUNCTION_INVOCATION_FAILED` was that `@vercel/node` in ESM mode failed on extensionless relative imports (e.g. `import ... from '../server/runner'`) and AWS Lambda containers do not contain GCC/G++ or MSYS2 toolchains.
+   - When the client called `await res.json()`, `JSON.parse` crashed trying to parse the `"A server error..."` text, resulting in the reported error.
+
+2. **Fixes Applied**:
+   - **Safe Network Response Parsing**: `remoteAdapter.ts` now uses `safeParseResponse` which checks `res.ok`, inspects `content-type`, and safely guards `JSON.parse` with try/catch so non-JSON errors never throw syntax crashes.
+   - **Direct Cloud Execution Runner**: `remoteAdapter.ts` connects directly to the Wandbox Cloud Runner (`gcc-head-c` for C, `gcc-head` for C++, and `cpython-3.12.7` for Python). It parses GCC and Python errors deterministically into beginner-friendly explanations, streams output to the terminal, and captures runtime trace frames for the visualizer.
+   - **Self-Contained Serverless Endpoints**: All files in `web/api/` (`health.ts`, `jobs/index.ts`, `ai/chat.ts`, `ai/merge.ts`, and sub-routes) are completely self-contained with no broken imports or missing Lambda dependencies.
+
+3. **Multi-Tab Starter Files (Python Active by Default)**:
+   - On load, CodeForge opens three starter files simultaneously in tabs: `main.py`, `main.cpp`, and `main.c`.
+   - `main.py` is selected as the active tab by default instead of C++.
+   - Users can switch tabs with one click or reset to starter files from the "New" dropdown menu.
+
+4. **User-Provided Gemini API Keys (BYOK - Bring Your Own Key)**:
+   - Users can log in / add up to **5 Google Gemini API keys** directly in the IDE.
+   - Keys are securely stored in the browser's `localStorage` (`codeforge_gemini_api_keys`).
+   - Requests call Google's Generative Language API directly from the browser with zero server environment variable requirements.
+   - **Smart Quota Rotation**: If the active key hits a rate limit or quota ceiling (HTTP 429), CodeForge automatically rotates to the next available key.
+
 

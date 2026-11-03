@@ -34,6 +34,7 @@ interface EditorState {
   setAiDiff: (diff: { fileId: string; originalContent: string; modifiedContent: string; isApplying: boolean } | null) => void
   acceptAiDiff: () => void
   rejectAiDiff: () => void
+  loadStarterFiles: () => void
 }
 
 let newFileCounter = 0
@@ -63,9 +64,77 @@ function detectLanguage(filename: string): LanguageId {
     case 'py':
       return 'python'
     default:
-      return 'c'
+      return 'python'
   }
 }
+
+export const DEFAULT_STARTER_FILES: OpenFile[] = [
+  {
+    id: 'starter-python',
+    name: 'main.py',
+    path: 'starter:///main.py',
+    language: 'python',
+    content: `# Python Starter
+def add(a, b):
+    return a + b
+
+def main():
+    print("Welcome to CodeForge!")
+    total = add(10, 20)
+    print("Total:", total)
+
+if __name__ == "__main__":
+    main()
+`,
+    savedContent: '',
+    isDirty: false
+  },
+  {
+    id: 'starter-cpp',
+    name: 'main.cpp',
+    path: 'starter:///main.cpp',
+    language: 'cpp',
+    content: `// C++ Starter
+#include <iostream>
+using namespace std;
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    cout << "Welcome to CodeForge!" << endl;
+    int total = add(10, 20);
+    cout << "Total: " << total << endl;
+    return 0;
+}
+`,
+    savedContent: '',
+    isDirty: false
+  },
+  {
+    id: 'starter-c',
+    name: 'main.c',
+    path: 'starter:///main.c',
+    language: 'c',
+    content: `// C Starter
+#include <stdio.h>
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    printf("Welcome to CodeForge!\\n");
+    int total = add(10, 20);
+    printf("Total: %d\\n", total);
+    return 0;
+}
+`,
+    savedContent: '',
+    isDirty: false
+  }
+]
 
 function languageExtension(lang: LanguageId): string {
   switch (lang) {
@@ -81,8 +150,8 @@ function languageExtension(lang: LanguageId): string {
 export const useEditorStore = create<EditorState>()(
   persist(
     (set, get) => ({
-      openFiles: [],
-      activeFileId: null,
+      openFiles: [...DEFAULT_STARTER_FILES],
+      activeFileId: 'starter-python',
       workingDirectory: null,
       errors: [],
       aiSuggestions: [],
@@ -220,7 +289,17 @@ export const useEditorStore = create<EditorState>()(
         }))
       },
 
-      rejectAiDiff: () => set({ aiDiff: null })
+      rejectAiDiff: () => set({ aiDiff: null }),
+
+      loadStarterFiles: () => {
+        set({
+          openFiles: [...DEFAULT_STARTER_FILES],
+          activeFileId: 'starter-python',
+          aiDiff: null,
+          errors: [],
+          aiSuggestions: []
+        })
+      }
     }),
     {
       name: 'codeforge-web-editor-storage',
@@ -232,6 +311,11 @@ export const useEditorStore = create<EditorState>()(
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {
+            const isLegacySingleCFile = state.openFiles && state.openFiles.length === 1 && state.openFiles[0].name.startsWith('untitled') && state.openFiles[0].name.endsWith('.c')
+            if (!state.openFiles || state.openFiles.length === 0 || isLegacySingleCFile) {
+              state.openFiles = [...DEFAULT_STARTER_FILES]
+              state.activeFileId = 'starter-python'
+            }
             syncFileCounter(state.openFiles)
           }
         }

@@ -4,8 +4,10 @@ import EditorTabs from './components/Editor/EditorTabs'
 import FileTree from './components/Sidebar/FileTree'
 import BottomPanel from './components/BottomPanel/BottomPanel'
 import SetupAssistant from './components/SetupAssistant/SetupAssistant'
+import AiKeyModal from './components/AiKeyModal/AiKeyModal'
 import { useEditorStore } from './state/editorStore'
 import { useExecutionStore } from './state/executionStore'
+import { useAiKeyStore } from './state/aiKeyStore'
 import VisualizerPanel from './components/Visualizer/VisualizerPanel'
 import ChatbotPanel from './components/Chatbot/ChatbotPanel'
 import type { LanguageId } from './shared/types'
@@ -45,6 +47,12 @@ export default function App() {
   const clearAiSuggestions = useEditorStore((s) => s.clearAiSuggestions)
   const createNewFile = useEditorStore((s) => s.createNewFile)
   const openFile = useEditorStore((s) => s.openFile)
+  const loadStarterFiles = useEditorStore((s) => s.loadStarterFiles)
+
+  const isAiKeyModalOpen = useAiKeyStore((s) => s.isModalOpen)
+  const openAiKeyModal = useAiKeyStore((s) => s.openModal)
+  const closeAiKeyModal = useAiKeyStore((s) => s.closeModal)
+  const aiKeys = useAiKeyStore((s) => s.keys)
 
   const status = useExecutionStore((s) => s.status)
   const setStatus = useExecutionStore((s) => s.setStatus)
@@ -66,12 +74,12 @@ export default function App() {
 
   const activeFile = openFiles.find((f) => f.id === activeFileId)
 
-  // Auto-create starter file on first launch
+  // Ensure starter files (main.py, main.cpp, main.c) on launch or when all closed
   useEffect(() => {
     if (openFiles.length === 0) {
-      createNewFile('python')
+      loadStarterFiles()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [openFiles.length, loadStarterFiles])
 
   // Export file to local disk
   const handleExport = useCallback(async () => {
@@ -405,6 +413,16 @@ export default function App() {
                   </span>
                 </div>
               ))}
+              <div
+                className="menu-item"
+                style={{ padding: 'var(--space-2) var(--space-4)', borderTop: '1px solid var(--border-primary)', color: 'var(--accent-blue)' }}
+                onClick={() => {
+                  loadStarterFiles()
+                  setShowNewMenu(false)
+                }}
+              >
+                🔄 Reset to Starter Files (Py, C++, C)
+              </div>
             </div>
           )}
         </div>
@@ -447,10 +465,23 @@ export default function App() {
 
         <button
           className="toolbar-btn"
+          onClick={openAiKeyModal}
+          title="Manage Gemini API Keys (BYOK - Save up to 5 keys in browser)"
+          style={{
+            borderColor: aiKeys.length > 0 ? 'rgba(46, 160, 67, 0.4)' : 'rgba(210, 153, 34, 0.5)',
+            color: aiKeys.length > 0 ? 'var(--accent-green)' : 'var(--accent-amber)',
+            fontWeight: 500
+          }}
+        >
+          🔑 AI Keys ({aiKeys.length}/5)
+        </button>
+
+        <button
+          className="toolbar-btn"
           onClick={() => setShowSetup(true)}
           title="Toolchains and Status"
         >
-          ⚙ Environment
+          ⚙ Runner
         </button>
 
         <div className="toolbar-spacer" />
@@ -516,6 +547,7 @@ export default function App() {
       )}
 
       {showSetup && <SetupAssistant onDismiss={() => setShowSetup(false)} />}
+      {isAiKeyModalOpen && <AiKeyModal onDismiss={closeAiKeyModal} />}
     </div>
   )
 }

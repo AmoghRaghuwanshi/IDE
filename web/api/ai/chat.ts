@@ -1,7 +1,4 @@
 import type { IncomingMessage, ServerResponse } from 'http'
-import { buildChatPrompt, askGemini } from '../../server/gemini'
-import { aiLimiter } from '../../server/rateLimit'
-import { getOrCreateSessionId } from '../../server/auth'
 
 async function parseBody(req: IncomingMessage): Promise<any> {
   if ((req as any).body) return (req as any).body
@@ -15,17 +12,20 @@ async function parseBody(req: IncomingMessage): Promise<any> {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (req.method !== 'POST') {
-    res.statusCode = 405
-    res.end(JSON.stringify({ success: false, error: 'Method Not Allowed' }))
+  res.setHeader('Content-Type', 'application/json')
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-gemini-api-key')
+
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204
+    res.end()
     return
   }
 
-  const sessionId = getOrCreateSessionId(req, res)
-  if (!aiLimiter.consume(sessionId)) {
-    res.statusCode = 429
-    res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify({ success: false, error: 'AI request limit reached. Please wait a minute.' }))
+  if (req.method !== 'POST') {
+    res.statusCode = 405
+    res.end(JSON.stringify({ success: false, error: 'Method Not Allowed' }))
     return
   }
 
@@ -33,15 +33,43 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const prompt = body.prompt || ''
   if (!prompt || typeof prompt !== 'string') {
     res.statusCode = 400
-    res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify({ success: false, error: 'Prompt is required.' }))
     return
   }
 
-  const fullPrompt = buildChatPrompt(prompt, body.context)
-  const result = await askGemini(fullPrompt)
+  const apiKey = (req.headers['x-gemini-api-key'] as string) || body.apiKey || process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    res.statusCode = 400
+    res.end(JSON.stringify({
+      success: false,
+      error: 'No Gemini API key provided. Please configure your API key in the AI Keys menu.'
+    }))
+    return
+  }
 
-  res.statusCode = result.success ? 200 : 500
-  res.setHeader('Content-Type', 'application/json')
-  res.end(JSON.stringify(result))
+  try {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`
+    const geminiRes = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
+      })
+    })
+
+    const data = await geminiRes.json()
+    if (!geminiRes.ok) {
+      res.statusCode = geminiRes.status
+      res.end(JSON.stringify({ success: false, error: data.error?.message || 'Gemini API error' }))
+      return
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    res.statusCode = 200
+    res.end(JSON.stringify({ success: true, text }))
+  } catch (err: any) {
+    res.statusCode = 500
+    res.end(JSON.stringify({ success: false, error: err.message || 'Internal server error' }))
+  }
 }
